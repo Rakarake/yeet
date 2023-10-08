@@ -190,3 +190,4 @@ fn animate_scale(
         transform.scale = Vec3::splat((time.elapsed_seconds().sin() + 1.1) * 2.0);
     }
 }
+
