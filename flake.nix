@@ -22,7 +22,9 @@
             # To use the wayland feature
             libxkbcommon wayland
             # Fater linking
-            lld
+            #lld
+            mold
+            clang
         ];
       in {
         # The rust package, use `nix build` to build
@@ -38,6 +40,18 @@
         # This makes sure we can build for WASM
         # Remember to add necessary changes made in defaultPackage to devShell
         devShell = pkgs.mkShell {
+          shellHook =
+          let
+            fastComple = ''
+              [target.x86_64-unknown-linux-gnu]
+              linker = "clang"
+              rustflags = ["-C", "link-arg=-fuse-ld=${pkgs.mold}/bin/mold"]
+            '';
+          in ''
+          echo "Blazingly fast 🔥" 
+          mkdir .cargo
+          echo '${fastComple}' > .cargo/config.toml
+          '';
           packages = [
             rust
             pkgs.ldtk
