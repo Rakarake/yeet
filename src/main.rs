@@ -6,14 +6,18 @@ use bevy::{
 };
 use std::f32::consts::*;
 use bevy::camera_controller::free_camera;
+use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 
 fn main() {
     App::new()
         .insert_resource(DirectionalLightShadowMap { size: 4096 })
         .add_plugins(DefaultPlugins)
+        .add_plugins(free_camera::FreeCameraPlugin)
+        .add_plugins(EguiPlugin::default())
+        .add_plugins(WorldInspectorPlugin::new())
+
         .add_systems(Startup, setup)
         .add_systems(Update, animate_light_direction)
-        .add_plugins(free_camera::FreeCameraPlugin)
         .run();
 }
 
@@ -48,6 +52,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
     commands.spawn(SceneRoot(asset_server.load(
         GltfAssetLabel::Scene(0).from_asset("Fox.gltf"),
+    )));
+    commands.spawn(SceneRoot(asset_server.load(
+        GltfAssetLabel::Scene(0).from_asset("Platform.glb"),
     )));
 }
 
