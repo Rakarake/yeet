@@ -18,7 +18,7 @@
             pkg-config
             udev alsa-lib vulkan-loader
             # To use the x11 feature
-            xorg.libX11 xorg.libXcursor xorg.libXi xorg.libXrandr 
+            libX11 libXcursor libXi libXrandr 
             # To use the wayland feature
             libxkbcommon wayland
             # Fater linking
@@ -55,6 +55,7 @@
           packages = [
             rust
             pkgs.ldtk
+            pkgs.rust-analyzer
           ] ++ deps;
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath deps;
         };
