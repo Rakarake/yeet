@@ -9,7 +9,14 @@ default-run = "yeet"
 [dependencies]
 bevy = { version = "0.18.1", default-features = false, features = [ "3d", "bevy_camera_controller", "free_camera" ] }
 bevy-inspector-egui = "*"
-bevy_rapier3d = { version = "*", features = [ "simd-stable", "debug-render-3d" ] }
+avian3d = { version = "*", features = [
+    "simd",
+    "diagnostic_ui",
+    "collider-from-mesh",
+    "bevy_scene",
+    "serialize",
+    "debug-plugin"
+] }
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
