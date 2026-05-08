@@ -22,6 +22,7 @@ fn main() -> AppExit {
             (
                 capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
                 release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
+                setup_a_rigid_body,
             ),
         )
         .run()
@@ -198,21 +199,24 @@ fn release_cursor(mut cursor: Single<&mut CursorOptions>) {
 //    ));
 //}
 //
-//fn setup_physics(mut commands: Commands, query: Query<(Entity, &Name, &ChildOf), Added<Mesh3d>>, parents: Query<&Name>) {
-//    for (entity, name, parent) in query {
-//        if let Ok(parent_name) = parents.get(parent.0) {
-//            match parent_name.as_str() {
-//                "Suzanne" => {
-//                    commands.entity(entity).insert(RigidBody::Dynamic);
-//                },
-//                "Ground" => {
-//                    commands.entity(entity).insert(RigidBody::Static);
-//                },
-//                _ => ()
-//            }
-//        }
-//    }
-//}
+fn setup_a_rigid_body(mut commands: Commands, query: Query<(Entity, &Name, &ChildOf), Added<Mesh3d>>, parents: Query<&Name>) {
+    for (entity, name, parent) in query {
+        if let Ok(parent_name) = parents.get(parent.0) {
+            match parent_name.as_str() {
+                "Suzanne" => {
+                    commands.entity(entity).insert((
+                         RigidBody::Dynamic,
+                         Restitution::new(0.7)
+                    ));
+                },
+                "Ground" => {
+                    commands.entity(entity).insert(RigidBody::Static);
+                },
+                _ => ()
+            }
+        }
+    }
+}
 //
 //#[derive(Component)]
 //struct PlayerInput;
