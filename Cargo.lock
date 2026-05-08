@@ -412,6 +412,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "avian_pickup"
+version = "0.5.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d748fb55ac2c45d7eb3e3e97e8afd79914ad5fc52abaa1685d5450de74d65296"
+dependencies = [
+ "avian3d",
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_log",
+ "bevy_math",
+ "bevy_platform",
+ "bevy_reflect",
+ "bevy_time",
+ "bevy_transform",
+ "bevy_utils",
+ "rand",
+]
+
+[[package]]
 name = "base64"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -488,6 +507,27 @@ dependencies = [
  "bevy_ecs",
  "bevy_reflect",
  "serde",
+]
+
+[[package]]
+name = "bevy_ahoy"
+version = "0.1.0-rc.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b65ce2a8fded60aaaae1e975d420e8ac893566840d521a62be1e7332fb9dab67"
+dependencies = [
+ "avian3d",
+ "avian_pickup",
+ "bevy_app",
+ "bevy_derive",
+ "bevy_ecs",
+ "bevy_enhanced_input",
+ "bevy_math",
+ "bevy_reflect",
+ "bevy_time",
+ "bevy_transform",
+ "bevy_utils",
+ "getrandom",
+ "tracing",
 ]
 
 [[package]]
@@ -900,6 +940,31 @@ checksum = "d4fee46eeddcbc00a805ae00ffa973f224671fc5cf0fe1a796963804faeade90"
 dependencies = [
  "bevy_macro_utils",
  "encase_derive_impl",
+]
+
+[[package]]
+name = "bevy_enhanced_input"
+version = "0.24.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c1352112be5fbb7ee04eb9fdc4c7d01e6cf1689080f242b7c014794ea5f46db"
+dependencies = [
+ "bevy",
+ "bevy_enhanced_input_macros",
+ "bitflags 2.10.0",
+ "log",
+ "smallvec",
+ "variadics_please",
+]
+
+[[package]]
+name = "bevy_enhanced_input_macros"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17ee73d4e362e2eb15ac58331c94e5076f6b5065761f008ca7dc930d446d205b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -6656,6 +6721,8 @@ dependencies = [
  "avian3d",
  "bevy",
  "bevy-inspector-egui",
+ "bevy_ahoy",
+ "bevy_enhanced_input",
 ]
 
 [[package]]

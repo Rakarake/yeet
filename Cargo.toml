@@ -7,9 +7,9 @@ default-run = "yeet"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.18.1", default-features = false, features = [ "3d", "bevy_camera_controller", "free_camera" ] }
+bevy = { version = "0.18", default-features = false, features = [ "3d", "bevy_camera_controller", "free_camera" ] }
 bevy-inspector-egui = "*"
-avian3d = { version = "*", features = [
+avian3d = { version = "0.6.0-rc.1", features = [
     "simd",
     "diagnostic_ui",
     "collider-from-mesh",
@@ -17,6 +17,8 @@ avian3d = { version = "*", features = [
     "serialize",
     "debug-plugin"
 ] }
+bevy_ahoy = "0.1.0-rc.6"
+bevy_enhanced_input = "0.24"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
