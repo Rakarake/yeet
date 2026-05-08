@@ -19,3 +19,7 @@ opt-level = 1
 [profile.dev.package."*"]
 opt-level = 3
 
+# Suggested by bevy-rapier
+[profile.release]
+codegen-units = 1
+

@@ -7,16 +7,28 @@ use bevy::{
 use std::f32::consts::*;
 use bevy::camera_controller::free_camera;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
+use bevy_rapier3d::prelude::*;
 
 fn main() {
     App::new()
         .insert_resource(DirectionalLightShadowMap { size: 4096 })
         .add_plugins(DefaultPlugins)
+        // free camera
         .add_plugins(free_camera::FreeCameraPlugin)
+        // inspector
         .add_plugins(EguiPlugin::default())
         .add_plugins(WorldInspectorPlugin::new())
+        // rapier
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugins(RapierDebugRenderPlugin::default())
 
         .add_systems(Startup, setup)
+        //.add_systems(Startup, (
+        //            setup,
+        //            setup_physics
+        //    ).chain()
+        //)
+        .add_systems(Update, setup_physics)
         .add_systems(Update, animate_light_direction)
         .run();
 }
@@ -56,6 +68,45 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(SceneRoot(asset_server.load(
         GltfAssetLabel::Scene(0).from_asset("Platform.glb"),
     )));
+}
+
+fn setup_physics(
+        mut commands: Commands,
+        meshes: Res<Assets<Mesh>>,
+        q_children: Query<(Entity, &Mesh3d, &ChildOf), Without<Collider>>,
+        q_parents: Query<&Name>,
+    ) {
+    for (entity, mesh, parent) in q_children.iter() {
+        //println!("{name}: has a mesh!!! 🥰🥰🥰");
+        if let Ok(parent_name) = q_parents.get(parent.0) {
+            if parent_name.as_str() == "Suzanne" || parent_name.as_str() == "Ground" {
+                let mesha = meshes.get(&mesh.0);
+                match mesha {
+                    Some(mesha) => {
+                        let mayb_collido = Collider::from_bevy_mesh(mesha, &ComputedColliderShape::TriMesh(TriMeshFlags::FIX_INTERNAL_EDGES));
+                        match mayb_collido {
+                            Some(collido) => {
+                                println!("ADDING COLLIDER 🍓");
+                                commands.entity(entity).insert((
+                                    collido,
+                                ));
+                                if parent_name.as_str() == "Suzanne" {
+                                    commands.entity(entity).insert((
+                                        RigidBody::Dynamic,
+                                        Restitution::coefficient(0.7),
+                                        //Transform::from_xyz(0.0, 4.0, 0.0),
+                                    ));
+                                }
+                            },
+                            None => todo!(),
+                        }
+                    },
+                    None => todo!(),
+                }
+            }
+
+        }
+    }
 }
 
 fn animate_light_direction(
