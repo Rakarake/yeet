@@ -28,7 +28,7 @@
         ];
       in {
         # The rust package, use `nix build` to build
-        defaultPackage = pkgs.rustPlatform.buildRustPackage {
+        packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = "yeet";
           version = "0.0.1";
           src = ./.;
@@ -39,7 +39,7 @@
 
         # This makes sure we can build for WASM
         # Remember to add necessary changes made in defaultPackage to devShell
-        devShell = pkgs.mkShell {
+        devShells.default = pkgs.mkShell {
           shellHook =
           let
             fastComple = ''
