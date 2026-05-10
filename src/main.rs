@@ -12,6 +12,7 @@ fn main() -> AppExit {
         .add_plugins((
             DefaultPlugins,
             PhysicsPlugins::default(),
+            PhysicsDebugPlugin,
             EnhancedInputPlugin,
             AhoyPlugins::default(),
         ))
@@ -73,6 +74,10 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     // Spawn the player camera
     commands.spawn((
         Camera3d::default(),
+        Projection::from(PerspectiveProjection{
+            fov: 90.0_f32.to_radians(),
+            ..default()
+        }),
         // Enable the optional builtin camera controller
         CharacterControllerCameraOf::new(player),
     ));
