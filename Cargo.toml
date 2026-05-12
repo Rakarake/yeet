@@ -7,7 +7,14 @@ default-run = "yeet"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.18", default-features = false, features = [ "3d", "bevy_camera_controller", "free_camera" ] }
+bevy = { version = "0.18", default-features = false, features = [
+    "3d",
+    "bevy_camera_controller",
+    "free_camera",
+    "jpeg",
+    "audio"
+] }
+
 bevy-inspector-egui = "*"
 avian3d = { version = "0.6.0-rc.1", features = [
     "simd",

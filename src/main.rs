@@ -8,6 +8,7 @@ use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
 use bevy_console::{AddConsoleCommand, ConsoleCommand, ConsoleConfiguration, ConsolePlugin, reply};
 use clap::Parser;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 // Skein test component
 #[derive(Component, Reflect, Default)]
@@ -17,13 +18,9 @@ struct Speak {
     phrase: String
 }
 
-//fn speak(q: Query<&Speak>, speak_now: Res<SpeakNow>) {
-//    if speak_now.0 {
-//        for s in q {
-//            println!("{}", s.phrase);
-//        }
-//    }
-//}
+#[derive(Component)]
+#[require(Camera2d)]
+pub struct MainCamera;
 
 fn main() -> AppExit {
     App::new()
@@ -35,6 +32,7 @@ fn main() -> AppExit {
             AhoyPlugins::default(),
             ConsolePlugin,
             bevy_skein::SkeinPlugin::default(),
+            WorldInspectorPlugin::new(),
         ))
         .add_input_context::<PlayerInput>()
         .add_systems(
@@ -46,9 +44,11 @@ fn main() -> AppExit {
         .add_systems(
             Update,
             (
+                test,
                 capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
                 release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
                 setup_a_rigid_body,
+                add_collision_geometry
             ),
         )
         .insert_resource(ConsoleConfiguration {
@@ -84,6 +84,13 @@ fn speak_command(mut log: ConsoleCommand<SpeakCommand>, q: Query<(&Speak, &Name)
         for (speak, name) in q {
             reply!(log, "{}: {}", name, speak.phrase);
         }
+    }
+}
+
+// Generic test system on Update
+fn test(mut commands: Commands, q: Query<&ColliderConstructorHierarchy>) {
+    for n in q {
+        println!("{:?}", n);
     }
 }
 
@@ -154,7 +161,7 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     // Here we load a glTF file and create a convex hull collider for each mesh.
     commands.spawn((
         SceneRoot(assets.load("Platform.glb#Scene0")),
-        RigidBody::Static,
+        //RigidBody::Static,
         //ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
     ));
 }
@@ -170,6 +177,42 @@ fn capture_cursor(mut cursor: Single<&mut CursorOptions>) {
 fn release_cursor(mut cursor: Single<&mut CursorOptions>) {
     cursor.visible = true;
     cursor.grab_mode = CursorGrabMode::None;
+}
+
+#[derive(Component, Reflect, Default)]
+#[reflect(Component, Default)]
+#[type_path = "api"]
+struct CollisionGeometry;
+
+/// Sets up collision for selected objects
+fn add_collision_geometry(
+    mut commands: Commands,
+    q: Query<Entity, Added<CollisionGeometry>>,
+    q_parents: Query<&Children>,
+    q_descendants: Query<&Collider>
+) {
+    if !q.is_empty() {
+        println!("q not empty");
+        if !q_descendants.is_empty() {
+            println!("🍵🍵🍵🍵HUGE!");
+            for x in q_descendants {
+                println!("👻{:?}", x);
+            }
+        }
+    }
+    if !q_descendants.is_empty() {
+        println!("q_descendants not empty");
+    }
+    for e in q {
+        //println!("");
+        for descendant in q_parents.iter_descendants(e) {
+            println!("✝️✝️✝️guu!");
+            if q_descendants.get(descendant).is_ok() {
+                println!("🗿🗿🗿 adding geometry");
+                commands.entity(descendant).insert(RigidBody::Static);
+            }
+        }
+    }
 }
 
 ////! Loads and renders a glTF file as a scene.
@@ -272,9 +315,9 @@ fn setup_a_rigid_body(mut commands: Commands, query: Query<(Entity, &Name, &Chil
                          Restitution::new(0.7)
                     ));
                 },
-                "Ground" => {
-                    commands.entity(entity).insert(RigidBody::Static);
-                },
+                //"Ground" => {
+                //    commands.entity(entity).insert(RigidBody::Static);
+                //},
                 _ => ()
             }
         }
