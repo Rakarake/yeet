@@ -20,6 +20,8 @@ avian3d = { version = "0.6.0-rc.1", features = [
 bevy_ahoy = "0.1.0-rc.6"
 bevy_enhanced_input = "0.24"
 bevy_skein = "0.5"
+bevy_console = "*"
+clap = "*"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

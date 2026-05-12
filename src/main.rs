@@ -6,6 +6,8 @@ use bevy::{
 };
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
+use bevy_console::{AddConsoleCommand, ConsoleCommand, ConsoleConfiguration, ConsolePlugin};
+use clap::Parser;
 
 // Skein test component
 #[derive(Component, Reflect, Default)]
@@ -15,7 +17,7 @@ struct Speak {
     phrase: String
 }
 
-fn speak(q: Query<&Speak>, justSpawnedIn) {
+fn speak(q: Query<&Speak>) {
     for s in q {
         println!("{}", s.phrase);
     }
@@ -29,6 +31,7 @@ fn main() -> AppExit {
             PhysicsDebugPlugin,
             EnhancedInputPlugin,
             AhoyPlugins::default(),
+            ConsolePlugin,
             bevy_skein::SkeinPlugin::default(),
         ))
         .add_input_context::<PlayerInput>()
@@ -47,7 +50,27 @@ fn main() -> AppExit {
                 speak,
             ),
         )
+        .insert_resource(ConsoleConfiguration {
+            keys: vec![
+                KeyCode::F7,
+            ],
+            ..Default::default()
+        })
+        .add_console_command::<EchoCommand, _>(echo_command)
         .run()
+}
+
+// Dummy console command
+#[derive(Parser, ConsoleCommand)]
+#[command(name = "echo")]
+struct EchoCommand {
+    msg: String,
+}
+
+fn echo_command(mut log: ConsoleCommand<EchoCommand>) {
+    if let Some(Ok(EchoCommand { msg })) = log.take() {
+        log.reply(msg);
+    }
 }
 
 fn setup(mut commands: Commands, assets: Res<AssetServer>) {
