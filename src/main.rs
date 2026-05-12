@@ -6,7 +6,7 @@ use bevy::{
 };
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
-use bevy_console::{AddConsoleCommand, ConsoleCommand, ConsoleConfiguration, ConsolePlugin};
+use bevy_console::{AddConsoleCommand, ConsoleCommand, ConsoleConfiguration, ConsolePlugin, reply};
 use clap::Parser;
 
 // Skein test component
@@ -17,11 +17,13 @@ struct Speak {
     phrase: String
 }
 
-fn speak(q: Query<&Speak>) {
-    for s in q {
-        println!("{}", s.phrase);
-    }
-}
+//fn speak(q: Query<&Speak>, speak_now: Res<SpeakNow>) {
+//    if speak_now.0 {
+//        for s in q {
+//            println!("{}", s.phrase);
+//        }
+//    }
+//}
 
 fn main() -> AppExit {
     App::new()
@@ -47,7 +49,6 @@ fn main() -> AppExit {
                 capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
                 release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
                 setup_a_rigid_body,
-                speak,
             ),
         )
         .insert_resource(ConsoleConfiguration {
@@ -57,6 +58,7 @@ fn main() -> AppExit {
             ..Default::default()
         })
         .add_console_command::<EchoCommand, _>(echo_command)
+        .add_console_command::<SpeakCommand, _>(speak_command)
         .run()
 }
 
@@ -70,6 +72,18 @@ struct EchoCommand {
 fn echo_command(mut log: ConsoleCommand<EchoCommand>) {
     if let Some(Ok(EchoCommand { msg })) = log.take() {
         log.reply(msg);
+    }
+}
+
+#[derive(Parser, ConsoleCommand)]
+#[command(name = "speak")]
+struct SpeakCommand {}
+
+fn speak_command(mut log: ConsoleCommand<SpeakCommand>, q: Query<(&Speak, &Name)>) {
+    if let Some(Ok(_)) = log.take() {
+        for (speak, name) in q {
+            reply!(log, "{}: {}", name, speak.phrase);
+        }
     }
 }
 
@@ -249,7 +263,7 @@ fn release_cursor(mut cursor: Single<&mut CursorOptions>) {
 //}
 //
 fn setup_a_rigid_body(mut commands: Commands, query: Query<(Entity, &Name, &ChildOf), Added<Mesh3d>>, parents: Query<&Name>) {
-    for (entity, name, parent) in query {
+    for (entity, _name, parent) in query {
         if let Ok(parent_name) = parents.get(parent.0) {
             match parent_name.as_str() {
                 "Suzanne" => {
