@@ -7,6 +7,20 @@ use bevy::{
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
 
+// Skein test component
+#[derive(Component, Reflect, Default)]
+#[reflect(Component, Default)]
+#[type_path = "api"]
+struct Speak {
+    phrase: String
+}
+
+fn speak(q: Query<&Speak>, justSpawnedIn) {
+    for s in q {
+        println!("{}", s.phrase);
+    }
+}
+
 fn main() -> AppExit {
     App::new()
         .add_plugins((
@@ -15,15 +29,22 @@ fn main() -> AppExit {
             PhysicsDebugPlugin,
             EnhancedInputPlugin,
             AhoyPlugins::default(),
+            bevy_skein::SkeinPlugin::default(),
         ))
         .add_input_context::<PlayerInput>()
-        .add_systems(Startup, setup)
+        .add_systems(
+            Startup,
+            (
+                setup,
+            )
+        )
         .add_systems(
             Update,
             (
                 capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
                 release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
                 setup_a_rigid_body,
+                speak,
             ),
         )
         .run()
@@ -97,7 +118,7 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     commands.spawn((
         SceneRoot(assets.load("Platform.glb#Scene0")),
         RigidBody::Static,
-        ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
+        //ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
     ));
 }
 
