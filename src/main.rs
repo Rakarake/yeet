@@ -1,8 +1,6 @@
 use avian3d::prelude::*;
 use bevy::{
-    input::common_conditions::input_just_pressed,
-    prelude::*,
-    window::{CursorGrabMode, CursorOptions},
+    input::common_conditions::input_just_pressed, prelude::*, scene::{SceneInstance, SceneInstanceReady}, window::{CursorGrabMode, CursorOptions}
 };
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
@@ -47,10 +45,11 @@ fn main() -> AppExit {
                 test,
                 capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
                 release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
-                setup_a_rigid_body,
-                add_collision_geometry
+                //setup_a_rigid_body,
+                add_collision_geometry,
             ),
         )
+        .add_observer(on_new_scene)
         .insert_resource(ConsoleConfiguration {
             keys: vec![
                 KeyCode::F7,
@@ -160,7 +159,7 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     // Ahoy will deal with it all.
     // Here we load a glTF file and create a convex hull collider for each mesh.
     commands.spawn((
-        SceneRoot(assets.load("Platform.glb#Scene0")),
+        SceneRoot(assets.load("main.glb#Scene0")),
         //RigidBody::Static,
         //ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
     ));
@@ -180,11 +179,50 @@ fn release_cursor(mut cursor: Single<&mut CursorOptions>) {
 }
 
 /// Will be removed when descendants have been initialized.
-#[derive(Component, Reflect, Default)]
+#[derive(Component, Reflect)]
 #[reflect(Component, Default)]
 #[type_path = "api"]
-struct CollisionGeometry;
+struct CollisionGeometry {
+    /// Type of collider.
+    mode: ColliderConstructor,
+    rigid_body: RigidBody,
+}
 
+impl Default for CollisionGeometry {
+    fn default() -> Self {
+        Self {
+            mode: ColliderConstructor::TrimeshFromMesh,
+            rigid_body: RigidBody::Static,
+        }
+    }
+}
+
+fn on_new_scene(
+    cond: On<SceneInstanceReady>,
+    mut commands: Commands,
+    q: Query<(Entity, &CollisionGeometry)>,
+    q_parents: Query<&Children>,
+    q_descendants: Query<&Mesh3d, Without<RigidBody>>
+) {
+    //println!("woha");
+    for (e, collision_geometry) in q {
+        //println!("coll🚲️");
+        for descendant in q_parents.iter_descendants(e) {
+            //println!("✝️✝️✝️guu!");
+            if q_descendants.get(descendant).is_ok() {
+                //println!("🗿🗿🗿 adding geometry");
+                commands.entity(descendant).insert((
+                    collision_geometry.mode.clone(), //ConvexHullFromMesh,
+                    collision_geometry.rigid_body,
+                ));
+            }
+        }
+        commands.entity(e).remove::<CollisionGeometry>();
+    }
+}
+
+// TODO use observers or something?
+// TODO put colliders on nodes named Collider
 /// Sets up collision for selected objects
 fn add_collision_geometry(
     mut commands: Commands,
@@ -207,19 +245,6 @@ fn add_collision_geometry(
     //for e in q_descendants {
     //    println!("{:?}", e);
     //}
-    for e in q {
-        //println!("");
-        for descendant in q_parents.iter_descendants(e) {
-            //println!("✝️✝️✝️guu!");
-            if q_descendants.get(descendant).is_ok() {
-                println!("🗿🗿🗿 adding geometry");
-                commands.entity(descendant).insert((
-                    ColliderConstructor::ConvexHullFromMesh, //ConvexHullFromMesh,
-                    RigidBody::Static,
-                ));
-            }
-        }
-    }
 }
 
 ////! Loads and renders a glTF file as a scene.
@@ -312,24 +337,24 @@ fn add_collision_geometry(
 //    ));
 //}
 //
-fn setup_a_rigid_body(mut commands: Commands, query: Query<(Entity, &Name, &ChildOf), Added<Mesh3d>>, parents: Query<&Name>) {
-    for (entity, _name, parent) in query {
-        if let Ok(parent_name) = parents.get(parent.0) {
-            match parent_name.as_str() {
-                "Suzanne" => {
-                    commands.entity(entity).insert((
-                         RigidBody::Dynamic,
-                         Restitution::new(0.7)
-                    ));
-                },
-                //"Ground" => {
-                //    commands.entity(entity).insert(RigidBody::Static);
-                //},
-                _ => ()
-            }
-        }
-    }
-}
+//fn setup_a_rigid_body(mut commands: Commands, query: Query<(Entity, &Name, &ChildOf), Added<Mesh3d>>, parents: Query<&Name>) {
+//    for (entity, _name, parent) in query {
+//        if let Ok(parent_name) = parents.get(parent.0) {
+//            match parent_name.as_str() {
+//                "Suzanne" => {
+//                    commands.entity(entity).insert((
+//                         RigidBody::Dynamic,
+//                         Restitution::new(0.7)
+//                    ));
+//                },
+//                //"Ground" => {
+//                //    commands.entity(entity).insert(RigidBody::Static);
+//                //},
+//                _ => ()
+//            }
+//        }
+//    }
+//}
 //
 //#[derive(Component)]
 //struct PlayerInput;
