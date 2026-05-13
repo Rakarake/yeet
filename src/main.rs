@@ -197,54 +197,19 @@ impl Default for CollisionGeometry {
     }
 }
 
+/// Sets up colliders etc.
 fn on_new_scene(
-    cond: On<SceneInstanceReady>,
+    _: On<SceneInstanceReady>,
     mut commands: Commands,
     q: Query<(Entity, &CollisionGeometry)>,
-    q_parents: Query<&Children>,
-    q_descendants: Query<&Mesh3d, Without<RigidBody>>
 ) {
-    //println!("woha");
     for (e, collision_geometry) in q {
-        //println!("coll🚲️");
-        for descendant in q_parents.iter_descendants(e) {
-            //println!("✝️✝️✝️guu!");
-            if q_descendants.get(descendant).is_ok() {
-                //println!("🗿🗿🗿 adding geometry");
-                commands.entity(descendant).insert((
-                    collision_geometry.mode.clone(), //ConvexHullFromMesh,
-                    collision_geometry.rigid_body,
-                ));
-            }
-        }
+        commands.entity(e).insert((
+            ColliderConstructorHierarchy::new(collision_geometry.mode.clone()),
+            collision_geometry.rigid_body,
+        ));
         commands.entity(e).remove::<CollisionGeometry>();
     }
-}
-
-// TODO use observers or something?
-// TODO put colliders on nodes named Collider
-/// Sets up collision for selected objects
-fn add_collision_geometry(
-    mut commands: Commands,
-    q: Query<Entity, With<CollisionGeometry>>,
-    q_parents: Query<&Children>,
-    q_descendants: Query<&Mesh3d, Without<RigidBody>>
-) {
-    //if !q.is_empty() {
-    //    println!("q not empty");
-    //    if !q_descendants.is_empty() {
-    //        println!("🍵🍵🍵🍵HUGE!");
-    //        for x in q_descendants {
-    //            println!("👻{:?}", x);
-    //        }
-    //    }
-    //}
-    //if !q_descendants.is_empty() {
-    //    println!("q_descendants not empty");
-    //}
-    //for e in q_descendants {
-    //    println!("{:?}", e);
-    //}
 }
 
 ////! Loads and renders a glTF file as a scene.
