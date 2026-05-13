@@ -13,7 +13,9 @@
       let
         overlays = [ rust-overlay.overlays.default ];
         pkgs = import nixpkgs { inherit overlays system; };
-        rust = pkgs.rust-bin.stable.latest.default;
+        rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override {
+          extensions = [ "rustc-codegen-cranelift" ];
+        }); #pkgs.rust-bin.stable.latest.default;
         deps = with pkgs; [
             pkg-config
             udev alsa-lib vulkan-loader
@@ -45,7 +47,21 @@
             fastComple = ''
               [target.x86_64-unknown-linux-gnu]
               linker = "clang"
-              rustflags = ["-C", "link-arg=-fuse-ld=${pkgs.mold}/bin/mold"]
+              rustflags = [
+                "-C",
+                "link-arg=-fuse-ld=${pkgs.mold}/bin/mold",
+                # (Nightly) Make the current crate share its generic instantiations
+                "-Zshare-generics=y"
+              ]
+
+              [unstable]
+              codegen-backend = true
+              
+              [profile.dev]
+              codegen-backend = "cranelift"
+              
+              [profile.dev.package."*"]
+              codegen-backend = "llvm"
             '';
           in ''
           echo "Blazingly fast 🔥" 

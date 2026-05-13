@@ -161,8 +161,8 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     // Here we load a glTF file and create a convex hull collider for each mesh.
     commands.spawn((
         SceneRoot(assets.load("Platform.glb#Scene0")),
-        //RigidBody::Static,
-        //ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
+        RigidBody::Static,
+        ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
     ));
 }
 
