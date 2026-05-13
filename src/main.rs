@@ -161,8 +161,8 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     // Here we load a glTF file and create a convex hull collider for each mesh.
     commands.spawn((
         SceneRoot(assets.load("Platform.glb#Scene0")),
-        RigidBody::Static,
-        ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
+        //RigidBody::Static,
+        //ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
     ));
 }
 
@@ -179,6 +179,7 @@ fn release_cursor(mut cursor: Single<&mut CursorOptions>) {
     cursor.grab_mode = CursorGrabMode::None;
 }
 
+/// Will be removed when descendants have been initialized.
 #[derive(Component, Reflect, Default)]
 #[reflect(Component, Default)]
 #[type_path = "api"]
@@ -187,29 +188,35 @@ struct CollisionGeometry;
 /// Sets up collision for selected objects
 fn add_collision_geometry(
     mut commands: Commands,
-    q: Query<Entity, Added<CollisionGeometry>>,
+    q: Query<Entity, With<CollisionGeometry>>,
     q_parents: Query<&Children>,
-    q_descendants: Query<&Collider>
+    q_descendants: Query<&Mesh3d, Without<RigidBody>>
 ) {
-    if !q.is_empty() {
-        println!("q not empty");
-        if !q_descendants.is_empty() {
-            println!("🍵🍵🍵🍵HUGE!");
-            for x in q_descendants {
-                println!("👻{:?}", x);
-            }
-        }
-    }
-    if !q_descendants.is_empty() {
-        println!("q_descendants not empty");
-    }
+    //if !q.is_empty() {
+    //    println!("q not empty");
+    //    if !q_descendants.is_empty() {
+    //        println!("🍵🍵🍵🍵HUGE!");
+    //        for x in q_descendants {
+    //            println!("👻{:?}", x);
+    //        }
+    //    }
+    //}
+    //if !q_descendants.is_empty() {
+    //    println!("q_descendants not empty");
+    //}
+    //for e in q_descendants {
+    //    println!("{:?}", e);
+    //}
     for e in q {
         //println!("");
         for descendant in q_parents.iter_descendants(e) {
-            println!("✝️✝️✝️guu!");
+            //println!("✝️✝️✝️guu!");
             if q_descendants.get(descendant).is_ok() {
                 println!("🗿🗿🗿 adding geometry");
-                commands.entity(descendant).insert(RigidBody::Static);
+                commands.entity(descendant).insert((
+                    ColliderConstructor::ConvexHullFromMesh, //ConvexHullFromMesh,
+                    RigidBody::Static,
+                ));
             }
         }
     }
