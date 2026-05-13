@@ -45,8 +45,6 @@ fn main() -> AppExit {
                 test,
                 capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
                 release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
-                //setup_a_rigid_body,
-                add_collision_geometry,
             ),
         )
         .add_observer(on_new_scene)
