@@ -47,3 +47,21 @@ fn setup(
         Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Dir3::Y),
     ));
 }
+
+// Older observer example
+///// Sets up colliders etc.
+//fn on_new_scene(
+//    _: On<SceneInstanceReady>,
+//    mut commands: Commands,
+//    q: Query<(Entity, &CollisionGeometry)>,
+//) {
+//    for (e, collision_geometry) in q {
+//        commands.entity(e).insert((
+//            ColliderConstructorHierarchy::new(collision_geometry.mode.clone()),
+//            collision_geometry.rigid_body,
+//        ));
+//        commands.entity(e).remove::<CollisionGeometry>();
+//    }
+//}
+
+
