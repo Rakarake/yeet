@@ -1,6 +1,6 @@
 use avian3d::prelude::*;
 use bevy::{
-    input::common_conditions::input_just_pressed, prelude::*, scene::{SceneInstance, SceneInstanceReady}, window::{CursorGrabMode, CursorOptions}
+    core_pipeline::Skybox, input::common_conditions::input_just_pressed, light::AtmosphereEnvironmentMapLight, pbr::{Atmosphere, AtmosphereSettings, ScatteringMedium, ScreenSpaceAmbientOcclusion}, prelude::*, scene::{SceneInstance, SceneInstanceReady}, window::{CursorGrabMode, CursorOptions}
 };
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
@@ -25,7 +25,7 @@ fn main() -> AppExit {
         .add_plugins((
             DefaultPlugins,
             PhysicsPlugins::default(),
-            PhysicsDebugPlugin,
+            //PhysicsDebugPlugin,
             EnhancedInputPlugin,
             AhoyPlugins::default(),
             ConsolePlugin,
@@ -85,13 +85,53 @@ fn speak_command(mut log: ConsoleCommand<SpeakCommand>, q: Query<(&Speak, &Name)
 }
 
 // Generic test system on Update
-fn test(mut commands: Commands, q: Query<&ColliderConstructorHierarchy>) {
+fn test(mut commands: Commands, world: &World, q_child: Query<(Entity, &Name, &MeshMaterial3d<StandardMaterial>)>, q: Query<(Entity, &Name, &Children)>) {
+    for (e, n, c) in q {
+        if n.as_str() == "Cube.194" {
+            println!("{:#?}",   world.inspect_entity(e).unwrap()
+                         .map(|info| info.name())
+                         .collect::<Vec<_>>());
+            println!("{:#?}", c);
+            for child in c.iter() {
+                let (e_child, n_child, mut material) = q_child.get(child).unwrap();
+                println!("{:#?}", n_child);
+                println!("{:#?}", world.inspect_entity(e_child).unwrap()
+                             .map(|info| info.name())
+                             .collect::<Vec<_>>());
+
+            }
+        }
+    }
     //for n in q {
     //    println!("{:?}", n);
     //}
 }
 
-fn setup(mut commands: Commands, assets: Res<AssetServer>) {
+fn asset_loaded(
+    asset_server: Res<AssetServer>,
+    mut images: ResMut<Assets<Image>>,
+    mut skyboxes: Query<&mut Skybox>,
+) {
+        //let mut image = images.get_mut(&cubemap.image_handle).unwrap();
+        //// NOTE: PNGs do not have any metadata that could indicate they contain a cubemap texture,
+        //// so they appear as one texture. The following code reconfigures the texture as necessary.
+        //if image.texture_descriptor.array_layer_count() == 1 {
+        //    let layers = image.height() / image.width();
+        //    image
+        //        .reinterpret_stacked_2d_as_array(layers)
+        //        .expect("asset should be 2d texture and height will always be evenly divisible with the given layers");
+        //    image.texture_view_descriptor = Some(TextureViewDescriptor {
+        //        dimension: Some(TextureViewDimension::Cube),
+        //        ..default()
+        //    });
+        //}
+
+        //for mut skybox in &mut skyboxes {
+        //    skybox.image = Some(cubemap.image_handle.clone());
+        //}
+}
+
+fn setup(mut commands: Commands, assets: Res<AssetServer>, mut scattering_mediums: ResMut<Assets<ScatteringMedium>>) {
     // Spawn the player
     let player = commands
         .spawn((
@@ -137,6 +177,15 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     // Spawn the player camera
     commands.spawn((
         Camera3d::default(),
+        Atmosphere::earthlike(scattering_mediums.add(ScatteringMedium::default())),
+        ScreenSpaceAmbientOcclusion::default(),
+        //Skybox {
+        //    image: assets.load("skybox.png").clone(),
+        //    brightness: 1000.0,
+        //    ..default()
+        //},
+        //AtmosphereSettings::default(),
+        //AtmosphereEnvironmentMapLight::default(),
         Projection::from(PerspectiveProjection{
             fov: 90.0_f32.to_radians(),
             ..default()
@@ -158,9 +207,9 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     // Ahoy will deal with it all.
     // Here we load a glTF file and create a convex hull collider for each mesh.
     commands.spawn((
-        SceneRoot(assets.load("main.glb#Scene0")),
-        //RigidBody::Static,
-        //ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
+        SceneRoot(assets.load("gm_construct.glb#Scene0")),
+        RigidBody::Static,
+        ColliderConstructorHierarchy::new(ColliderConstructor::TrimeshFromMesh),
     ));
 }
 
