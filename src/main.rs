@@ -1,10 +1,10 @@
 use avian3d::prelude::*;
 use bevy::{
-    core_pipeline::Skybox, dev_tools::{self, infinite_grid::InfiniteGridPlugin}, gltf::GltfPlugin, image::ImageFilterMode, input::common_conditions::input_just_pressed, light::AtmosphereEnvironmentMapLight, pbr::{AtmosphereSettings, ScreenSpaceAmbientOcclusion}, prelude::*, window::{CursorGrabMode, CursorOptions}
+    core_pipeline::Skybox, dev_tools::{self, infinite_grid::InfiniteGridPlugin}, gltf::GltfPlugin, image::ImageFilterMode, input::common_conditions::input_just_pressed, light::AtmosphereEnvironmentMapLight, log::{self, LogPlugin}, pbr::{AtmosphereSettings, ScreenSpaceAmbientOcclusion}, prelude::*, window::{CursorGrabMode, CursorOptions}
 };
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
-use bevy_console::{AddConsoleCommand, ConsoleCommand, ConsoleConfiguration, ConsolePlugin, reply};
+use bevy_console::{AddConsoleCommand, ConsoleCommand, ConsoleConfiguration, ConsolePlugin, reply, make_layer};
 use clap::Parser;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
@@ -31,6 +31,11 @@ fn main() -> AppExit {
                     anisotropy_clamp: 16,
                     ..Default::default()
                 },
+                ..Default::default()
+            }).set(LogPlugin {
+                //level: log::Level::INFO,
+                //filter: "error,capture_bevy_logs=info".to_owned(),
+                custom_layer: make_layer,
                 ..Default::default()
             }),
             PhysicsPlugins::default(),
@@ -225,7 +230,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {// mut scatter
     // Here we load a glTF file and create a convex hull collider for each mesh.
 
     let mesh_scene =
-        WorldAssetRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("gm_construct.glb")));
+        WorldAssetRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("main2.glb")));
     commands.spawn((
         mesh_scene,
         RigidBody::Static,
