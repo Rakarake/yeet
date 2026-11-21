@@ -1,6 +1,6 @@
 use avian3d::prelude::*;
 use bevy::{
-    core_pipeline::Skybox, input::common_conditions::input_just_pressed, light::AtmosphereEnvironmentMapLight, pbr::{Atmosphere, AtmosphereSettings, ScatteringMedium, ScreenSpaceAmbientOcclusion}, prelude::*, scene::{SceneInstance, SceneInstanceReady}, window::{CursorGrabMode, CursorOptions}
+    core_pipeline::Skybox, dev_tools::{self, infinite_grid::InfiniteGridPlugin}, gltf::GltfPlugin, image::ImageFilterMode, input::common_conditions::input_just_pressed, light::AtmosphereEnvironmentMapLight, pbr::{AtmosphereSettings, ScreenSpaceAmbientOcclusion}, prelude::*, window::{CursorGrabMode, CursorOptions}
 };
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
@@ -23,8 +23,18 @@ pub struct MainCamera;
 fn main() -> AppExit {
     App::new()
         .add_plugins((
-            DefaultPlugins,
+            DefaultPlugins.set(GltfPlugin {
+                default_sampler: bevy::image::ImageSamplerDescriptor {
+                    min_filter: ImageFilterMode::Linear,
+                    mag_filter: ImageFilterMode::Linear,
+                    mipmap_filter: ImageFilterMode::Linear,
+                    anisotropy_clamp: 16,
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
             PhysicsPlugins::default(),
+            InfiniteGridPlugin,
             //PhysicsDebugPlugin,
             EnhancedInputPlugin,
             AhoyPlugins::default(),
@@ -86,22 +96,22 @@ fn speak_command(mut log: ConsoleCommand<SpeakCommand>, q: Query<(&Speak, &Name)
 
 // Generic test system on Update
 fn test(mut commands: Commands, world: &World, q_child: Query<(Entity, &Name, &MeshMaterial3d<StandardMaterial>)>, q: Query<(Entity, &Name, &Children)>) {
-    for (e, n, c) in q {
-        if n.as_str() == "Cube.194" {
-            println!("{:#?}",   world.inspect_entity(e).unwrap()
-                         .map(|info| info.name())
-                         .collect::<Vec<_>>());
-            println!("{:#?}", c);
-            for child in c.iter() {
-                let (e_child, n_child, mut material) = q_child.get(child).unwrap();
-                println!("{:#?}", n_child);
-                println!("{:#?}", world.inspect_entity(e_child).unwrap()
-                             .map(|info| info.name())
-                             .collect::<Vec<_>>());
+    //for (e, n, c) in q {
+    //    if n.as_str() == "Cube.194" {
+    //        println!("{:#?}",   world.inspect_entity(e).unwrap()
+    //                     .map(|info| info.name())
+    //                     .collect::<Vec<_>>());
+    //        println!("{:#?}", c);
+    //        for child in c.iter() {
+    //            let (e_child, n_child, mut material) = q_child.get(child).unwrap();
+    //            println!("{:#?}", n_child);
+    //            println!("{:#?}", world.inspect_entity(e_child).unwrap()
+    //                         .map(|info| info.name())
+    //                         .collect::<Vec<_>>());
 
-            }
-        }
-    }
+    //        }
+    //    }
+    //}
     //for n in q {
     //    println!("{:?}", n);
     //}
@@ -131,7 +141,12 @@ fn asset_loaded(
         //}
 }
 
-fn setup(mut commands: Commands, assets: Res<AssetServer>, mut scattering_mediums: ResMut<Assets<ScatteringMedium>>) {
+fn spawn_player() -> impl Scene {
+
+}
+
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {// mut scattering_mediums: ResMut<Assets<ScatteringMedium>>) {
+    commands.spawn(dev_tools::infinite_grid::InfiniteGrid);
     // Spawn the player
     let player = commands
         .spawn((
@@ -177,7 +192,9 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>, mut scattering_medium
     // Spawn the player camera
     commands.spawn((
         Camera3d::default(),
-        Atmosphere::earthlike(scattering_mediums.add(ScatteringMedium::default())),
+        // Need to be off for ScreenSpaceAmbientOcclusion
+        Msaa::Off,
+        //Atmosphere::earthlike(scattering_mediums.add(ScatteringMedium::default())),
         ScreenSpaceAmbientOcclusion::default(),
         //Skybox {
         //    image: assets.load("skybox.png").clone(),
@@ -198,7 +215,7 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>, mut scattering_medium
     commands.spawn((
         Transform::from_xyz(0.0, 1.0, 0.0).looking_at(vec3(1.0, -2.0, -2.0), Vec3::Y),
         DirectionalLight {
-            shadows_enabled: true,
+            //shadows_enabled: true,
             ..default()
         },
     ));
@@ -206,8 +223,11 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>, mut scattering_medium
     // Spawn the level. This can be done in whatever way you prefer: spawn individual colliders, load a scene, use Skein, use bevy_trenchbroom, etc.
     // Ahoy will deal with it all.
     // Here we load a glTF file and create a convex hull collider for each mesh.
+
+    let mesh_scene =
+        WorldAssetRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("gm_construct.glb")));
     commands.spawn((
-        SceneRoot(assets.load("gm_construct.glb#Scene0")),
+        mesh_scene,
         RigidBody::Static,
         ColliderConstructorHierarchy::new(ColliderConstructor::TrimeshFromMesh),
     ));
