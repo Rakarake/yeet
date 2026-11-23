@@ -75,6 +75,7 @@ fn main() -> AppExit {
         })
         .add_console_command::<EchoCommand, _>(echo_command)
         .add_console_command::<SpeakCommand, _>(speak_command)
+        .add_console_command::<MapCommand, _>(map_command)
         .run()
 }
 
@@ -99,6 +100,36 @@ fn speak_command(mut log: ConsoleCommand<SpeakCommand>, q: Query<(&Speak, &Name)
     if let Some(Ok(_)) = log.take() {
         for (speak, name) in q {
             reply!(log, "{}: {}", name, speak.phrase);
+        }
+    }
+}
+
+#[derive(Parser, ConsoleCommand)]
+#[command(name = "map")]
+struct MapCommand {
+    path: String,
+    with_collisions: Option<bool>,
+}
+
+fn map_command(mut commands: Commands, asset_server: Res<AssetServer>, mut log: ConsoleCommand<MapCommand>, current_map: Query<(Entity, &WorldAssetRoot)>) {
+    if let Some(Ok(MapCommand { path, with_collisions })) = log.take() {
+        log.reply(format!("loading map: {}", path));
+        for (e, _) in current_map {
+            commands.entity(e).despawn();
+        }
+        let mesh_scene =
+            WorldAssetRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset(path)));
+        if let Some(with_collisions) = with_collisions && with_collisions {
+            log.reply("adding colliders to geometry");
+            commands.spawn((
+                mesh_scene,
+                RigidBody::Static,
+                ColliderConstructorHierarchy::new(ColliderConstructor::TrimeshFromMesh),
+            ));
+        } else {
+            commands.spawn((
+                mesh_scene,
+            ));
         }
     }
 }
