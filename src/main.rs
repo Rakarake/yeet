@@ -1,6 +1,6 @@
 use avian3d::prelude::*;
 use bevy::{
-    core_pipeline::Skybox, dev_tools::{self, infinite_grid::InfiniteGridPlugin}, gltf::GltfPlugin, image::ImageFilterMode, input::common_conditions::input_just_pressed, light::AtmosphereEnvironmentMapLight, log::{self, LogPlugin}, pbr::{AtmosphereSettings, ScreenSpaceAmbientOcclusion}, prelude::*, window::{CursorGrabMode, CursorOptions}
+    core_pipeline::Skybox, dev_tools::{self, infinite_grid::InfiniteGridPlugin}, gltf::GltfPlugin, image::ImageFilterMode, input::common_conditions::input_just_pressed, light::AtmosphereEnvironmentMapLight, log::{self, LogPlugin}, pbr::{AtmosphereSettings, ScreenSpaceAmbientOcclusion}, prelude::*, render::render_resource::{TextureViewDescriptor, TextureViewDimension}, window::{CursorGrabMode, CursorOptions}
 };
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
@@ -54,6 +54,7 @@ fn main() -> AppExit {
             Startup,
             (
                 setup,
+                player::spawn_player,
             )
         )
         .add_systems(
@@ -63,6 +64,7 @@ fn main() -> AppExit {
                 toggle_cursor.run_if(input_just_pressed(KeyCode::Escape)),
                 //capture_cursor.run_if(input_just_pressed(KeyCode::Escape)),
                 //release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
+                asset_loaded,
             ),
         )
         .insert_resource(ConsoleConfiguration {
@@ -124,43 +126,61 @@ fn test(mut commands: Commands, world: &World, q_child: Query<(Entity, &Name, &M
     //}
 }
 
+#[derive(Resource)]
+struct Cubemap {
+    is_loaded: bool,
+    index: usize,
+    image_handle: Handle<Image>,
+}
+
 fn asset_loaded(
     asset_server: Res<AssetServer>,
     mut images: ResMut<Assets<Image>>,
+    mut cubemap: ResMut<Cubemap>,
     mut skyboxes: Query<&mut Skybox>,
 ) {
-        //let mut image = images.get_mut(&cubemap.image_handle).unwrap();
-        //// NOTE: PNGs do not have any metadata that could indicate they contain a cubemap texture,
-        //// so they appear as one texture. The following code reconfigures the texture as necessary.
-        //if image.texture_descriptor.array_layer_count() == 1 {
-        //    let layers = image.height() / image.width();
-        //    image
-        //        .reinterpret_stacked_2d_as_array(layers)
-        //        .expect("asset should be 2d texture and height will always be evenly divisible with the given layers");
-        //    image.texture_view_descriptor = Some(TextureViewDescriptor {
-        //        dimension: Some(TextureViewDimension::Cube),
-        //        ..default()
-        //    });
-        //}
+    if !cubemap.is_loaded && asset_server.load_state(&cubemap.image_handle).is_loaded() {
+        info!("Swapping Cubemap");
+        let mut image = images.get_mut(&cubemap.image_handle).unwrap();
+        // NOTE: PNGs do not have any metadata that could indicate they contain a cubemap texture,
+        // so they appear as one texture. The following code reconfigures the texture as necessary.
+        if image.texture_descriptor.array_layer_count() == 1 {
+            let layers = image.height() / image.width();
+            image
+                .reinterpret_stacked_2d_as_array(layers)
+                .expect("asset should be 2d texture and height will always be evenly divisible with the given layers");
+            image.texture_view_descriptor = Some(TextureViewDescriptor {
+                dimension: Some(TextureViewDimension::Cube),
+                ..default()
+            });
+        }
 
-        //for mut skybox in &mut skyboxes {
-        //    skybox.image = Some(cubemap.image_handle.clone());
-        //}
+        for mut skybox in &mut skyboxes {
+            skybox.image = Some(cubemap.image_handle.clone());
+        }
+
+        cubemap.is_loaded = true;
+    }
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {// mut scattering_mediums: ResMut<Assets<ScatteringMedium>>) {
     commands.spawn(dev_tools::infinite_grid::InfiniteGrid);
 
-    player::spawn_player(&mut commands);
-
     // Spawn a directional light
     commands.spawn((
         Transform::from_xyz(0.0, 1.0, 0.0).looking_at(vec3(1.0, -2.0, -2.0), Vec3::Y),
         DirectionalLight {
+            illuminance: 35000.0,
             //shadows_enabled: true,
             ..default()
         },
     ));
+
+    commands.insert_resource(GlobalAmbientLight {
+        color: Color::srgb_u8(210, 220, 240),
+        brightness: 1.0,
+        ..default()
+    });
 
     // TODO look at bevy::scene root?
     let mesh_scene =

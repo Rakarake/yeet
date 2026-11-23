@@ -11,7 +11,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 #[derive(Component, Default, Clone)]
 pub(crate) struct PlayerInput;
 
-pub fn spawn_player(commands: &mut Commands) {
+pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
     let player = commands.spawn_scene(bsn! {
         Name::new("Player")
         // Add the character controller configuration. We'll use the default settings for now.
@@ -62,6 +62,10 @@ pub fn spawn_player(commands: &mut Commands) {
 
         ]
     }).id();
+
+    // skybox
+    let skybox_handle = asset_server.load("skybox.png");
+
     // Can't use bsn cuz CameraOf doesn't implement Template
     commands.spawn((
         Camera3d::default(),
@@ -81,7 +85,23 @@ pub fn spawn_player(commands: &mut Commands) {
             ..default()
         }),
         // Enable the optional builtin camera controller
-        CharacterControllerCameraOf::new(player)
+        CharacterControllerCameraOf::new(player),
+        Skybox {
+            image: Some(skybox_handle.clone()),
+            brightness: 1000.0,
+            ..Default::default()
+        },
+        GeneratedEnvironmentMapLight {
+            environment_map: skybox_handle.clone(),
+            intensity: 100.0,
+            ..Default::default()
+        }
     ));
+
+    commands.insert_resource(crate::Cubemap {
+        is_loaded: false,
+        index: 0,
+        image_handle: skybox_handle,
+    });
 }
 
