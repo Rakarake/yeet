@@ -911,8 +911,7 @@ dependencies = [
 [[package]]
 name = "bevy_console"
 version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a0648660fdc34d9b39ea15c2c4c5309fc7e534c3e7a12c0dea97e30fd85111c"
+source = "git+https://github.com/Rakarake/bevy-console#d6f2295cea31737644a476cfa9c40c871d6f7aea"
 dependencies = [
  "ansi-parser",
  "bevy",
@@ -927,8 +926,7 @@ dependencies = [
 [[package]]
 name = "bevy_console_derive"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc372956b73a0ef8ffcb62e603747eedae75c20474173f0593f8d4c9e02d8531"
+source = "git+https://github.com/Rakarake/bevy-console#d6f2295cea31737644a476cfa9c40c871d6f7aea"
 dependencies = [
  "better-bae",
  "proc-macro2",
