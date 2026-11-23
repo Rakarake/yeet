@@ -8,6 +8,8 @@ use bevy_console::{AddConsoleCommand, ConsoleCommand, ConsoleConfiguration, Cons
 use clap::Parser;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
+mod player;
+
 // Skein test component
 #[derive(Component, Reflect, Default)]
 #[reflect(Component, Default)]
@@ -47,7 +49,7 @@ fn main() -> AppExit {
             bevy_skein::SkeinPlugin::default(),
             WorldInspectorPlugin::new(),
         ))
-        .add_input_context::<PlayerInput>()
+        .add_input_context::<player::PlayerInput>()
         .add_systems(
             Startup,
             (
@@ -146,75 +148,10 @@ fn asset_loaded(
         //}
 }
 
-fn spawn_player() -> impl Scene {
-
-}
-
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {// mut scattering_mediums: ResMut<Assets<ScatteringMedium>>) {
     commands.spawn(dev_tools::infinite_grid::InfiniteGrid);
-    // Spawn the player
-    let player = commands
-        .spawn((
-            Name::new("Player"),
-            // Add the character controller configuration. We'll use the default settings for now.
-            CharacterController::default(),
-            // The KCC currently behaves best when using a cylinder
-            Collider::cylinder(0.7, 1.8),
-            Transform::from_xyz(0.0, 20.0, 0.0),
-            // Configure inputs. The actions `Movement`, `Jump`, etc. are provided by Ahoy, you just need to bind them.
-            PlayerInput,
-            actions!(PlayerInput[
-                (
-                    Action::<Movement>::new(),
-                    // Normalize the input vector
-                    DeadZone::default(),
-                    Bindings::spawn((
-                        Cardinal::wasd_keys(),
-                        Axial::left_stick()
-                    ))
-                ),
-                (
-                    Action::<Jump>::new(),
-                    bindings![KeyCode::Space,  GamepadButton::South],
-                ),
-                (
-                    Action::<Crouch>::new(),
-                    bindings![KeyCode::ControlLeft, GamepadButton::LeftTrigger2],
-                ),
-                (
-                    Action::<RotateCamera>::new(),
-                    Bindings::spawn((
-                        // tweak mouse and right stick sensitivity
-                        // in Scale::splat values
-                        Spawn((Binding::mouse_motion(), Scale::splat(0.07))),
-                        Axial::right_stick().with((Scale::splat(4.0), DeadZone::default())),
-                    ))
-                ),
-            ]),
-        ))
-        .id();
 
-    // Spawn the player camera
-    commands.spawn((
-        Camera3d::default(),
-        // Need to be off for ScreenSpaceAmbientOcclusion
-        Msaa::Off,
-        //Atmosphere::earthlike(scattering_mediums.add(ScatteringMedium::default())),
-        ScreenSpaceAmbientOcclusion::default(),
-        //Skybox {
-        //    image: assets.load("skybox.png").clone(),
-        //    brightness: 1000.0,
-        //    ..default()
-        //},
-        //AtmosphereSettings::default(),
-        //AtmosphereEnvironmentMapLight::default(),
-        Projection::from(PerspectiveProjection{
-            fov: 90.0_f32.to_radians(),
-            ..default()
-        }),
-        // Enable the optional builtin camera controller
-        CharacterControllerCameraOf::new(player),
-    ));
+    player::spawn_player(&mut commands);
 
     // Spawn a directional light
     commands.spawn((
@@ -225,10 +162,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {// mut scatter
         },
     ));
 
-    // Spawn the level. This can be done in whatever way you prefer: spawn individual colliders, load a scene, use Skein, use bevy_trenchbroom, etc.
-    // Ahoy will deal with it all.
-    // Here we load a glTF file and create a convex hull collider for each mesh.
-
+    // TODO look at bevy::scene root?
     let mesh_scene =
         WorldAssetRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("main2.glb")));
     commands.spawn((
@@ -237,9 +171,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {// mut scatter
         ColliderConstructorHierarchy::new(ColliderConstructor::TrimeshFromMesh),
     ));
 }
-
-#[derive(Component, Default)]
-pub(crate) struct PlayerInput;
 
 fn toggle_cursor(mut cursor: Single<&mut CursorOptions>) {
     cursor.visible = !cursor.visible;
