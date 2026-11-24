@@ -11,20 +11,95 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 #[derive(Component, Default, Clone)]
 pub(crate) struct PlayerInput;
 
+#[derive(Component, Default, Clone)]
+pub(crate) struct PlayerNoclip;
+
+#[derive(Component, Default, Clone)]
+pub struct Noclip {
+    input_dir: Vec2,
+}
+
+#[derive(Parser, ConsoleCommand)]
+#[command(name = "noclip")]
+pub struct NoclipCommand;
+
+pub fn noclip_command(mut commands: Commands, mut log: ConsoleCommand<NoclipCommand>, q: Query<(Entity, &Position, &mut CharacterController, Option<&Noclip>, &mut LinearVelocity)>) {
+    if let Some(Ok(_)) = log.take() {
+        for (e, pos, mut c, noclip, mut vel) in q {
+            if noclip.is_some() {
+                log.reply("noclip off");
+                //commands.entity(e).insert((
+                //    ContextActivity::<PlayerInput>::ACTIVE,
+                //    ContextActivity::<PlayerNoclip>::INACTIVE,
+                //));
+                commands.entity(e).remove::<Noclip>();
+            } else {
+                *vel = LinearVelocity::ZERO;
+                log.reply("noclip on");
+                commands.entity(e).insert((
+                    ContextActivity::<PlayerInput>::INACTIVE,
+                    ContextActivity::<PlayerNoclip>::ACTIVE,
+                ));
+                //c.gravity = 0.0;
+                //commands.entity(e).remove::<Collider>();
+                commands.entity(e).insert(Noclip::default());
+                c.filter.mask = LayerMask::NONE;
+                c.gravity = 0.0;
+                //commands.entity(e).remove::<CollisionLayers>();
+                //commands.entity(e).insert(CollisionLayers::new(LayerMask::NONE, LayerMask::NONE));
+            }
+        }
+    }
+}
+
+pub fn noclip_movement(movement: On<Fire<Movement>>, q: Query<(&mut Noclip, &mut CharacterControllerState, &mut LinearVelocity)>) {
+    for (noclip, c, mut vel) in q {
+        let mut dir = c.orientation * -Vec3::Z;
+        dir = dir.normalize();
+
+        *vel = LinearVelocity(vel.move_towards(dir, 200.0) * 4.0);
+    }
+}
+
 pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
     let player = commands.spawn_scene(bsn! {
         Name::new("Player")
         // Add the character controller configuration. We'll use the default settings for now.
-        CharacterController::default()
+        CharacterController {
+            speed: 7.0,
+        }
         // The KCC currently behaves best when using a cylinder
         Collider::cylinder(0.7, 1.8)
         Transform::from_xyz(0.0, 20.0, 0.0)
         // Configure inputs. The actions `Movement`, `Jump`, etc. are provided by Ahoy, you just need to bind them.
-        PlayerInput
         ////actions!(PlayerInput[
+        PlayerNoclip
+        Actions<PlayerNoclip>[
+            Action::<RotateCamera>::new()
+            Bindings [
+                Binding::mouse_motion()
+                ~Scale::splat(0.07)
+                --
+                //~Negate::all()
+                {preset::axial::new(
+                    (GamepadAxis::RightStickX, Scale::splat(100.0), Negate::x()),
+                    (GamepadAxis::RightStickY, Scale::splat(100.0), Negate::x()),
+                )}
+            ]
+            --
+            Action::<Movement>::new()
+            DeadZone
+            Bindings [
+                {preset::cardinal::wasd_keys()}
+                --
+                {preset::axial::left_stick()}
+                //Cardinal::wasd_keys(),
+                //Axial::left_stick()
+            ]
+        ]
+        PlayerInput
         Actions<PlayerInput>[
             Action::<Movement>::new()
-            // Normalize the input vector
             DeadZone
             Bindings [
                 {preset::cardinal::wasd_keys()}

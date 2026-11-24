@@ -50,6 +50,7 @@ fn main() -> AppExit {
             WorldInspectorPlugin::new(),
         ))
         .add_input_context::<player::PlayerInput>()
+        .add_input_context::<player::PlayerNoclip>()
         .add_systems(
             Startup,
             (
@@ -76,6 +77,8 @@ fn main() -> AppExit {
         .add_console_command::<EchoCommand, _>(echo_command)
         .add_console_command::<SpeakCommand, _>(speak_command)
         .add_console_command::<MapCommand, _>(map_command)
+        .add_console_command::<player::NoclipCommand, _>(player::noclip_command)
+        .add_observer(player::noclip_movement)
         .run()
 }
 
