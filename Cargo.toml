@@ -18,7 +18,7 @@ avian3d = { version = "0.8.0", features = [
     "debug-plugin"
 ] }
 avian_pickup = "0.7"
-bevy_ahoy = "0.3"
+bevy_ahoy = { version = "0.3", features = ["pickup"] }
 bevy_enhanced_input = "0.27"
 bevy_skein = "0.7"
 bevy_console = { git = "https://github.com/Rakarake/bevy-console" }

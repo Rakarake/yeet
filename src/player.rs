@@ -7,6 +7,7 @@ use bevy_enhanced_input::prelude::*;
 use bevy_console::{AddConsoleCommand, ConsoleCommand, ConsoleConfiguration, ConsolePlugin, reply, make_layer};
 use clap::Parser;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use avian_pickup::prelude::*;
 
 #[derive(Component, Default, Clone)]
 pub(crate) struct PlayerInput;
@@ -36,6 +37,7 @@ pub fn noclip_command(mut commands: Commands, mut log: ConsoleCommand<NoclipComm
                 commands.entity(e).remove::<Noclip>();
             } else {
                 log.reply("noclip on");
+                info!("filtz: {:?}", c.filter);
                 let noclip = Noclip {
                     old_filter: c.filter.mask.0,
                     old_gravity: c.gravity,
@@ -78,30 +80,6 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
         Transform::from_xyz(0.0, 20.0, 0.0)
         // Configure inputs. The actions `Movement`, `Jump`, etc. are provided by Ahoy, you just need to bind them.
         ////actions!(PlayerInput[
-        PlayerNoclip
-        Actions<PlayerNoclip>[
-            Action::<RotateCamera>::new()
-            Bindings [
-                Binding::mouse_motion()
-                ~Scale::splat(0.07)
-                --
-                //~Negate::all()
-                {preset::axial::new(
-                    (GamepadAxis::RightStickX, Scale::splat(100.0), Negate::x()),
-                    (GamepadAxis::RightStickY, Scale::splat(100.0), Negate::x()),
-                )}
-            ]
-            --
-            Action::<Movement>::new()
-            DeadZone
-            Bindings [
-                {preset::cardinal::wasd_keys()}
-                --
-                {preset::axial::left_stick()}
-                //Cardinal::wasd_keys(),
-                //Axial::left_stick()
-            ]
-        ]
         PlayerInput
         Actions<PlayerInput>[
             Action::<Movement>::new()
@@ -139,16 +117,32 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
                     (GamepadAxis::RightStickY, Scale::splat(100.0), Negate::x()),
                 )}
             ]
-
+            --
+            Action::<PullObject>::new()
+            Bindings [
+                Binding(KeyCode::KeyE)
+            ]
+            --
+            Action::<ThrowObject>::new()
+            Bindings [
+                Binding(KeyCode::KeyQ)
+            ]
         ]
     }).id();
 
     // skybox
     let skybox_handle = asset_server.load("skybox.png");
+    let skybox_blurred_handle = asset_server.load("skybox-small-blurred.png");
 
     // Can't use bsn cuz CameraOf doesn't implement Template
+    use bevy_ahoy::prelude::*;
     commands.spawn((
         Camera3d::default(),
+        PickupConfig {
+            interaction_distance: 300.0,
+            ..Default::default()
+        },
+        //AvianPickupActor::default(),
         // Need to be off for ScreenSpaceAmbientOcclusion
         Msaa::Sample4,
         //Atmosphere::earthlike(scattering_mediums.add(ScatteringMedium::default())),
@@ -171,17 +165,30 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
             brightness: 1000.0,
             ..Default::default()
         },
-        GeneratedEnvironmentMapLight {
-            environment_map: skybox_handle.clone(),
-            intensity: 100.0,
+        EnvironmentMapLight {
+            diffuse_map: skybox_blurred_handle.clone(),
+            specular_map: skybox_handle.clone(),
+            intensity: 50.0,
             ..Default::default()
-        }
+        },
+        //GeneratedEnvironmentMapLight {
+        //    environment_map: skybox_handle.clone(),
+        //    intensity: 100.0,
+        //    ..Default::default()
+        //}
+        //
+        //GlobalAmbientLight {
+        //    color: Color::srgb_u8(210, 220, 240),
+        //    brightness: 1000.0,
+        //    ..default()
+        //},
     ));
 
     commands.insert_resource(crate::Cubemap {
         is_loaded: false,
         index: 0,
         image_handle: skybox_handle,
+        blurred_image_handle: skybox_blurred_handle,
     });
 }
 

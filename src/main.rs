@@ -7,8 +7,28 @@ use bevy_enhanced_input::prelude::*;
 use bevy_console::{AddConsoleCommand, ConsoleCommand, ConsoleConfiguration, ConsolePlugin, reply, make_layer};
 use clap::Parser;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use avian_pickup::prelude::*;
 
 mod player;
+
+
+#[derive(Component, Reflect, Default)]
+#[reflect(Component, Default)]
+#[type_path = "api"]
+struct CollisionGeo {
+    trimesh: bool,
+}
+
+fn instantiate_collision_geo(mut commands: Commands, q: Query<(Entity, &CollisionGeo)>) {
+    for (e, g) in q {
+        info!("creating collision geo");
+        commands.entity(e).insert((
+            RigidBody::Static,
+            ColliderConstructorHierarchy::new(if g.trimesh {ColliderConstructor::TrimeshFromMesh} else {ColliderConstructor::ConvexHullFromMesh}),
+        ));
+        commands.entity(e).remove::<CollisionGeo>();
+    }
+}
 
 // Skein test component
 #[derive(Component, Reflect, Default)]
@@ -67,6 +87,7 @@ fn main() -> AppExit {
                 //release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
                 asset_loaded,
                 player::noclip_update,
+                instantiate_collision_geo,
             ),
         )
         .insert_resource(ConsoleConfiguration {
@@ -166,6 +187,7 @@ struct Cubemap {
     is_loaded: bool,
     index: usize,
     image_handle: Handle<Image>,
+    blurred_image_handle: Handle<Image>,
 }
 
 fn asset_loaded(
@@ -174,6 +196,7 @@ fn asset_loaded(
     mut cubemap: ResMut<Cubemap>,
     mut skyboxes: Query<&mut Skybox>,
 ) {
+    // TODO: fix this, it's really bad
     if !cubemap.is_loaded && asset_server.load_state(&cubemap.image_handle).is_loaded() {
         info!("Swapping Cubemap");
         let mut image = images.get_mut(&cubemap.image_handle).unwrap();
@@ -194,7 +217,33 @@ fn asset_loaded(
             skybox.image = Some(cubemap.image_handle.clone());
         }
 
-        cubemap.is_loaded = true;
+        if asset_server.load_state(&cubemap.blurred_image_handle).is_loaded() {
+            cubemap.is_loaded = true;
+        }
+    }
+    if !cubemap.is_loaded && asset_server.load_state(&cubemap.blurred_image_handle).is_loaded() {
+        info!("Swapping Cubemap Blurred");
+        let mut image = images.get_mut(&cubemap.blurred_image_handle).unwrap();
+        // NOTE: PNGs do not have any metadata that could indicate they contain a cubemap texture,
+        // so they appear as one texture. The following code reconfigures the texture as necessary.
+        if image.texture_descriptor.array_layer_count() == 1 {
+            let layers = image.height() / image.width();
+            image
+                .reinterpret_stacked_2d_as_array(layers)
+                .expect("asset should be 2d texture and height will always be evenly divisible with the given layers");
+            image.texture_view_descriptor = Some(TextureViewDescriptor {
+                dimension: Some(TextureViewDimension::Cube),
+                ..default()
+            });
+        }
+
+        for mut skybox in &mut skyboxes {
+            skybox.image = Some(cubemap.blurred_image_handle.clone());
+        }
+
+        if asset_server.load_state(&cubemap.image_handle).is_loaded() {
+            cubemap.is_loaded = true;
+        }
     }
 }
 
@@ -205,6 +254,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {// mut scatter
     commands.spawn((
         Transform::from_xyz(0.0, 1.0, 0.0).looking_at(vec3(1.0, -2.0, -2.0), Vec3::Y),
         DirectionalLight {
+            shadow_maps_enabled: true,
             illuminance: 35000.0,
             //shadows_enabled: true,
             ..default()
@@ -222,8 +272,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {// mut scatter
         WorldAssetRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("main2.glb")));
     commands.spawn((
         mesh_scene,
-        RigidBody::Static,
-        ColliderConstructorHierarchy::new(ColliderConstructor::TrimeshFromMesh),
+        RigidBody::Static
+        /*ColliderConstructorHierarchy::new(ColliderConstructor::TrimeshFromMesh)*/,
     ));
 }
 
