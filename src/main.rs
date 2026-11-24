@@ -66,6 +66,7 @@ fn main() -> AppExit {
                 //capture_cursor.run_if(input_just_pressed(KeyCode::Escape)),
                 //release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
                 asset_loaded,
+                player::noclip_update,
             ),
         )
         .insert_resource(ConsoleConfiguration {

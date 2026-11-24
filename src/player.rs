@@ -17,47 +17,52 @@ pub(crate) struct PlayerNoclip;
 #[derive(Component, Default, Clone)]
 pub struct Noclip {
     input_dir: Vec2,
+    old_filter: u32,
+    old_gravity: f32,
 }
 
 #[derive(Parser, ConsoleCommand)]
 #[command(name = "noclip")]
 pub struct NoclipCommand;
 
-pub fn noclip_command(mut commands: Commands, mut log: ConsoleCommand<NoclipCommand>, q: Query<(Entity, &Position, &mut CharacterController, Option<&Noclip>, &mut LinearVelocity)>) {
+
+pub fn noclip_command(mut commands: Commands, mut log: ConsoleCommand<NoclipCommand>, q: Query<(Entity, &mut CharacterController, Option<&Noclip>)>) {
     if let Some(Ok(_)) = log.take() {
-        for (e, pos, mut c, noclip, mut vel) in q {
-            if noclip.is_some() {
+        for (e, mut c, noclip) in q {
+            if let Some(noclip) = noclip {
                 log.reply("noclip off");
-                //commands.entity(e).insert((
-                //    ContextActivity::<PlayerInput>::ACTIVE,
-                //    ContextActivity::<PlayerNoclip>::INACTIVE,
-                //));
+                c.filter.mask = LayerMask(noclip.old_filter);
+                c.gravity = noclip.old_gravity;
                 commands.entity(e).remove::<Noclip>();
             } else {
-                *vel = LinearVelocity::ZERO;
                 log.reply("noclip on");
-                commands.entity(e).insert((
-                    ContextActivity::<PlayerInput>::INACTIVE,
-                    ContextActivity::<PlayerNoclip>::ACTIVE,
-                ));
-                //c.gravity = 0.0;
-                //commands.entity(e).remove::<Collider>();
-                commands.entity(e).insert(Noclip::default());
+                let noclip = Noclip {
+                    old_filter: c.filter.mask.0,
+                    old_gravity: c.gravity,
+                    ..default()
+                };
+                commands.entity(e).insert(noclip);
                 c.filter.mask = LayerMask::NONE;
                 c.gravity = 0.0;
-                //commands.entity(e).remove::<CollisionLayers>();
-                //commands.entity(e).insert(CollisionLayers::new(LayerMask::NONE, LayerMask::NONE));
             }
         }
     }
 }
 
-pub fn noclip_movement(movement: On<Fire<Movement>>, q: Query<(&mut Noclip, &mut CharacterControllerState, &mut LinearVelocity)>) {
-    for (noclip, c, mut vel) in q {
-        let mut dir = c.orientation * -Vec3::Z;
-        dir = dir.normalize();
-
+pub fn noclip_update(q: Query<(&mut Noclip, &mut CharacterControllerState, &mut LinearVelocity)>) {
+    for (mut noclip, c, mut vel) in q {
+        let mut dir = c.orientation * Vec3::new(noclip.input_dir.x, 0.0, - noclip.input_dir.y);
+        if dir != Vec3::ZERO {
+            dir = dir.normalize();
+        }
         *vel = LinearVelocity(vel.move_towards(dir, 200.0) * 4.0);
+        noclip.input_dir = Vec2::ZERO;
+    }
+}
+
+pub fn noclip_movement(movement: On<Fire<Movement>>, q: Query<&mut Noclip>) {
+    for mut noclip in q {
+        noclip.input_dir = movement.value;
     }
 }
 
