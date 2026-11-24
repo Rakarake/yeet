@@ -55,7 +55,7 @@ pub fn noclip_update(q: Query<(&mut Noclip, &mut CharacterControllerState, &mut 
         if dir != Vec3::ZERO {
             dir = dir.normalize();
         }
-        *vel = LinearVelocity(vel.move_towards(dir, 200.0) * 4.0);
+        *vel = LinearVelocity(vel.move_towards(dir, 200.0) * 10.0);
         noclip.input_dir = Vec2::ZERO;
     }
 }
